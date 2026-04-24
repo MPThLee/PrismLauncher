@@ -136,8 +136,16 @@ LaunchDecision LaunchController::decideLaunchMode()
     if (m_wantedLaunchMode == LaunchMode::Normal) {
         if (m_accountToUse->shouldRefresh() || m_accountToUse->accountState() == AccountState::Offline) {
             // Force account refresh on the account used to launch the instance updating the AccountState
-            // only on first try and if it is not meant to be offline
-            m_accountToUse->refresh();
+            // only if it is not meant to be offline.
+            auto task = m_accountToUse->refresh();
+
+            ProgressDialog progDialog(m_parentWidget);
+            progDialog.setSkipButton(true, tr("Abort"));
+            progDialog.execWithTask(task.get());
+
+            if (task->getState() == State::AbortedByUser) {
+                return LaunchDecision::Abort;
+            }
         }
     }
 
